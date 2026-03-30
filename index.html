@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Toolbox</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.min.mjs" type="module"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <a href="#" class="logo">PDF Toolbox</a>
+    <span class="tagline">すべての処理はブラウザ内で完結。ファイルは外部に送信されません。</span>
+  </header>
+
+  <main id="landing" class="landing">
+    <div class="bento-grid">
+      <a href="#tool-images" class="bento-card bento-wide">
+        <div class="card-icon" style="background:#3b82f6">🖼</div>
+        <div class="card-body"><h2>PDF → 画像</h2><p>PDFの各ページをPNG/JPEG画像に変換。解像度を選択可能</p></div>
+      </a>
+      <a href="#tool-gif" class="bento-card">
+        <div class="card-icon" style="background:#8b5cf6">🎞</div>
+        <div class="card-body"><h2>PDF → GIF</h2><p>アニメーションGIFに変換。秒数指定可</p></div>
+      </a>
+      <a href="#tool-split" class="bento-card">
+        <div class="card-icon" style="background:#ef4444">✂</div>
+        <div class="card-body"><h2>PDF 分割</h2><p>プレビューで確認しながら分割箇所を指定</p></div>
+      </a>
+      <a href="#tool-merge" class="bento-card">
+        <div class="card-icon" style="background:#f59e0b">📎</div>
+        <div class="card-body"><h2>PDF 結合</h2><p>複数PDFを好きな順序で結合</p></div>
+      </a>
+      <a href="#tool-reorder" class="bento-card bento-wide">
+        <div class="card-icon" style="background:#10b981">↕</div>
+        <div class="card-body"><h2>ページ並替</h2><p>ドラッグ&ドロップでページの順序を変更</p></div>
+      </a>
+      <a href="#tool-props" class="bento-card">
+        <div class="card-icon" style="background:#6366f1">📝</div>
+        <div class="card-body"><h2>プロパティ編集</h2><p>PDFのタイトル等メタデータを編集</p></div>
+      </a>
+      <a href="#tool-delete" class="bento-card">
+        <div class="card-icon" style="background:#ec4899">🗑</div>
+        <div class="card-body"><h2>ページ削除</h2><p>プレビューで確認しながらページを削除</p></div>
+      </a>
+      <a href="#tool-blank" class="bento-card">
+        <div class="card-icon" style="background:#14b8a6">➕</div>
+        <div class="card-body"><h2>白紙追加</h2><p>指定位置に白紙ページを挿入</p></div>
+      </a>
+    </div>
+  </main>
+
+  <section id="tool-images" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>PDF → 画像変換</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>PDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" class="file-input" data-tool="images"></div>
+      <div class="controls" id="images-controls" style="display:none">
+        <div class="control-row"><label>解像度 (DPI):</label><select id="images-dpi"><option value="72">72 DPI（低品質・高速）</option><option value="150" selected>150 DPI（標準）</option><option value="300">300 DPI（高品質）</option><option value="600">600 DPI（最高品質・低速）</option></select></div>
+        <div class="control-row"><label>フォーマット:</label><select id="images-format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select></div>
+        <div class="control-row" id="images-quality-row" style="display:none"><label>JPEG品質: <span id="images-quality-val">0.9</span></label><input type="range" id="images-quality" min="0.1" max="1.0" step="0.1" value="0.9"></div>
+        <div class="control-row"><label>ページ選択:</label><select id="images-pages"><option value="all">全ページ</option><option value="custom">ページ指定</option></select><input type="text" id="images-page-range" placeholder="例: 1-3, 5, 8" style="display:none"></div>
+        <button class="btn-primary" id="images-convert">変換してダウンロード</button>
+      </div>
+      <div class="progress-area" id="images-progress" style="display:none"><div class="progress-bar"><div class="progress-fill"></div></div><span class="progress-text"></span></div>
+      <div class="preview-area" id="images-preview"></div>
+    </div>
+  </section>
+
+  <section id="tool-gif" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>PDF → GIF変換</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>PDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" class="file-input" data-tool="gif"></div>
+      <div class="controls" id="gif-controls" style="display:none">
+        <div class="control-row"><label>1ページあたりの秒数:</label><input type="number" id="gif-delay" value="2" min="0.5" max="30" step="0.5"></div>
+        <div class="control-row"><label>最大幅 (px):</label><input type="number" id="gif-width" value="800" min="200" max="1920" step="100"></div>
+        <button class="btn-primary" id="gif-convert">GIFを生成</button>
+      </div>
+      <div class="progress-area" id="gif-progress" style="display:none"><div class="progress-bar"><div class="progress-fill"></div></div><span class="progress-text"></span></div>
+      <div class="preview-area" id="gif-preview"></div>
+    </div>
+  </section>
+
+  <section id="tool-split" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>PDF 分割</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>PDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" class="file-input" data-tool="split"></div>
+      <div class="controls" id="split-controls" style="display:none">
+        <p class="hint">サムネイル間の赤い線をクリックして分割箇所を指定してください</p>
+        <div class="split-info" id="split-info"></div>
+        <button class="btn-primary" id="split-execute" disabled>分割してダウンロード</button>
+      </div>
+      <div class="progress-area" id="split-progress" style="display:none"><div class="progress-bar"><div class="progress-fill"></div></div><span class="progress-text"></span></div>
+      <div class="preview-area thumbnail-grid" id="split-preview"></div>
+    </div>
+  </section>
+
+  <section id="tool-merge" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>PDF 結合</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>複数のPDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" multiple class="file-input" data-tool="merge"></div>
+      <div class="controls" id="merge-controls" style="display:none">
+        <p class="hint">ドラッグ&ドロップでファイルの結合順序を変更できます</p>
+        <div class="merge-file-list" id="merge-file-list"></div>
+        <button class="btn-primary" id="merge-execute">結合してダウンロード</button>
+      </div>
+      <div class="progress-area" id="merge-progress" style="display:none"><div class="progress-bar"><div class="progress-fill"></div></div><span class="progress-text"></span></div>
+    </div>
+  </section>
+
+  <section id="tool-reorder" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>ページ並替</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>PDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" class="file-input" data-tool="reorder"></div>
+      <div class="controls" id="reorder-controls" style="display:none">
+        <p class="hint">サムネイルをドラッグ&ドロップで並び替えてください</p>
+        <button class="btn-primary" id="reorder-execute">保存してダウンロード</button>
+      </div>
+      <div class="progress-area" id="reorder-progress" style="display:none"><div class="progress-bar"><div class="progress-fill"></div></div><span class="progress-text"></span></div>
+      <div class="preview-area thumbnail-grid sortable-grid" id="reorder-preview"></div>
+    </div>
+  </section>
+
+  <section id="tool-delete" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>ページ削除</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>PDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" class="file-input" data-tool="delete"></div>
+      <div class="controls" id="delete-controls" style="display:none">
+        <p class="hint">削除するページをクリックして選択してください（赤枠 = 削除対象）</p>
+        <div class="delete-info" id="delete-info"></div>
+        <button class="btn-primary" id="delete-execute" disabled>削除して保存</button>
+      </div>
+      <div class="progress-area" id="delete-progress" style="display:none"><div class="progress-bar"><div class="progress-fill"></div></div><span class="progress-text"></span></div>
+      <div class="preview-area thumbnail-grid" id="delete-preview"></div>
+    </div>
+  </section>
+
+  <section id="tool-blank" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>白紙ページ追加</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>PDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" class="file-input" data-tool="blank"></div>
+      <div class="controls" id="blank-controls" style="display:none">
+        <p class="hint">サムネイル間の「+」ボタンをクリックして白紙ページを挿入</p>
+        <div class="control-row"><label>白紙サイズ:</label><select id="blank-size"><option value="a4">A4 (210×297mm)</option><option value="letter">Letter (216×279mm)</option><option value="match">隣接ページと同じサイズ</option></select></div>
+        <button class="btn-primary" id="blank-execute">保存してダウンロード</button>
+      </div>
+      <div class="progress-area" id="blank-progress" style="display:none"><div class="progress-bar"><div class="progress-fill"></div></div><span class="progress-text"></span></div>
+      <div class="preview-area thumbnail-grid" id="blank-preview"></div>
+    </div>
+  </section>
+
+  <section id="tool-props" class="workspace hidden">
+    <div class="workspace-header"><a href="#" class="back-btn">← 戻る</a><h1>プロパティ編集</h1></div>
+    <div class="workspace-body">
+      <div class="upload-area"><p>PDFファイルをドラッグ&ドロップ、またはクリックして選択</p><input type="file" accept=".pdf" class="file-input" data-tool="props"></div>
+      <div class="controls" id="props-controls" style="display:none">
+        <div class="props-form">
+          <div class="control-row"><label>タイトル:</label><input type="text" id="props-title" placeholder="PDFのタイトル"></div>
+          <div class="control-row"><label>著者:</label><input type="text" id="props-author" readonly class="readonly-field"></div>
+          <div class="control-row"><label>件名:</label><input type="text" id="props-subject" readonly class="readonly-field"></div>
+          <div class="control-row"><label>作成者:</label><input type="text" id="props-creator" readonly class="readonly-field"></div>
+          <div class="control-row"><label>ページ数:</label><input type="text" id="props-pages" readonly class="readonly-field"></div>
+        </div>
+        <button class="btn-primary" id="props-execute">保存してダウンロード</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/pdf-renderer.js"></script>
+  <script type="module" src="js/thumbnail-manager.js"></script>
+  <script type="module" src="js/pdf-manipulator.js"></script>
+  <script type="module" src="js/download-helper.js"></script>
+  <script type="module" src="js/gif-generator.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
